@@ -120,9 +120,12 @@
 
   <section id="screen-home" class="card">
     <div class="section-title">Оберіть режим</div>
-    <div class="grid">
+        <div class="grid">
       <button class="btn primary" onclick="startAllRandom()">🎲 Пройти всі тести (рандомно)</button>
       <button class="btn green" onclick="startAllOrdered()">📋 Пройти всі тести по порядку</button>
+    </div>
+    <div style="margin-top: 14px;">
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#6d28d9); border-color:#8b5cf6;" onclick="startModuleMode()">📝 Як на модулі (30 випадкових питань)</button>
     </div>
     <div class="divider"></div>
     <div class="section-title">Теми</div>
@@ -524,11 +527,36 @@ function startAllRandom(){
   showScreen("screen-quiz");
   renderQuestion();
 }
+function startModuleMode(){
+  let all = [];
+  TOPICS.forEach(topic => {
+    topic.questions.forEach(q => {
+      const prepared = prepareQuestion(q, true); // true = перемішати відповіді
+      prepared.topicTitle = topic.title;
+      all.push(prepared);
+    });
+  });
+  
+  // Перемішуємо всі питання і беремо перші 30 (вони будуть унікальні)
+  all = shuffle(all);
+  const moduleQuestions = all.slice(0, 30); 
 
+  session = { 
+    questions: moduleQuestions, 
+    index: 0, 
+    answers: [], 
+    mode: "module", 
+    topicId: null, 
+    topicTitle: "Модульний контроль (30 питань)" 
+  };
+  showScreen("screen-quiz");
+  renderQuestion();
+}
 function retrySame(){
   if(!session) return goHome();
   if(session.mode === "topic") startTopic(session.topicId);
   else if(session.mode === "all-ordered") startAllOrdered();
+  else if(session.mode === "module") startModuleMode(); // Додано для модуля
   else startAllRandom();
 }
 
