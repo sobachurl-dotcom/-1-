@@ -438,17 +438,249 @@ const TOPICS = [
 /* =========================================================
    СТАТИСТИКА (localStorage)
    ========================================================= */
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>КРОК-1 — Біологія. Тренажер тестів</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --text:#e2e8f0;
+    --muted:#94a3b8; --accent:#38bdf8; --accent2:#22c55e; --danger:#ef4444;
+    --warn:#f59e0b; --border:#334155; --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:linear-gradient(160deg,#0b1120 0%,#0f172a 60%,#111c33 100%);
+    color:var(--text); min-height:100vh; padding:24px 16px 60px;
+  }
+  .wrap{max-width:900px; margin:0 auto;}
+  header{text-align:center; margin-bottom:26px;}
+  header h1{
+    font-size:clamp(20px,4vw,30px); font-weight:800; letter-spacing:.5px;
+    background:linear-gradient(90deg,#38bdf8,#22c55e); -webkit-background-clip:text;
+    background-clip:text; color:transparent;
+  }
+  header p{color:var(--muted); margin-top:8px; font-size:14px;}
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:13px 20px; border-radius:12px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); font-size:15px; font-weight:600;
+    cursor:pointer; transition:.18s; width:100%; text-align:center;
+  }
+  .btn:hover{transform:translateY(-2px); border-color:var(--accent); background:#2d3f5c;}
+  .btn.primary{background:linear-gradient(135deg,#0284c7,#0369a1); border-color:#0ea5e9;}
+  .btn.primary:hover{background:linear-gradient(135deg,#0ea5e9,#0284c7);}
+  .btn.green{background:linear-gradient(135deg,#15803d,#166534); border-color:#22c55e;}
+  .btn.green:hover{background:linear-gradient(135deg,#22c55e,#15803d);}
+  .btn.small{padding:9px 14px; font-size:13px; width:auto;}
+  .btn.ghost{background:transparent;}
+  .btn.danger{background:linear-gradient(135deg,#b91c1c,#991b1b); border-color:#ef4444;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;}
+  @media(max-width:640px){.grid{grid-template-columns:1fr;}}
+  .topic-list{margin-top:20px; display:flex; flex-direction:column; gap:10px;}
+  .topic-row{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:var(--panel2); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; transition:.18s;
+  }
+  .topic-row:hover{border-color:var(--accent);}
+  .topic-info{flex:1; min-width:0;}
+  .topic-title{font-weight:700; font-size:14.5px; line-height:1.35;}
+  .topic-meta{font-size:12px; color:var(--muted); margin-top:4px;}
+  .stat-pill{
+    display:inline-block; font-size:11px; font-weight:700; padding:3px 9px;
+    border-radius:999px; background:#0c4a6e; color:#7dd3fc; margin-left:6px;
+  }
+  .stat-pill.good{background:#14532d; color:#86efac;}
+  .stat-pill.bad{background:#7f1d1d; color:#fca5a5;}
+  .quiz-top{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;}
+  .progress-bar{height:8px; background:#0b1220; border-radius:99px; overflow:hidden; margin-bottom:20px;}
+  .progress-fill{height:100%; width:0; background:linear-gradient(90deg,#38bdf8,#22c55e); transition:width .3s;}
+  .q-counter{font-size:13px; color:var(--muted); font-weight:600;}
+  .q-topic{font-size:12px; color:var(--accent); font-weight:700; text-transform:uppercase; letter-spacing:.6px;}
+  .q-text{font-size:17px; font-weight:600; line-height:1.5; margin:10px 0 18px;}
+  .options{display:flex; flex-direction:column; gap:10px;}
+  .option{
+    display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:12px;
+    background:var(--panel2); border:2px solid var(--border); cursor:pointer;
+    transition:.15s; font-size:15px; line-height:1.4;
+  }
+  .option:hover{border-color:#475569; background:#2d3f5c;}
+  .option .letter{
+    flex:0 0 30px; height:30px; display:flex; align-items:center; justify-content:center;
+    border-radius:8px; background:#0b1220; font-weight:800; color:var(--accent); font-size:14px;
+  }
+  .option.correct{border-color:var(--accent2); background:#0f2e1d;}
+  .option.correct .letter{background:#166534; color:#bbf7d0;}
+  .option.wrong{border-color:var(--danger); background:#2a1215;}
+  .option.wrong .letter{background:#7f1d1d; color:#fecaca;}
+  .option.disabled{pointer-events:none; opacity:.85;}
+  .feedback{margin-top:16px; padding:14px 16px; border-radius:12px; font-size:14px; display:none;}
+  .feedback.ok{background:#0f2e1d; border:1px solid #166534; color:#bbf7d0; display:block;}
+  .feedback.no{background:#2a1215; border:1px solid #7f1d1d; color:#fecaca; display:block;}
+  .nav-row{display:flex; justify-content:flex-end; gap:10px; margin-top:18px;}
+  .score-big{font-size:56px; font-weight:900; text-align:center; margin:6px 0 2px;
+    background:linear-gradient(90deg,#38bdf8,#22c55e); -webkit-background-clip:text;
+    background-clip:text; color:transparent;}
+  .score-sub{text-align:center; color:var(--muted); font-size:14px; margin-bottom:22px;}
+  .result-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px;}
+  @media(max-width:560px){.result-grid{grid-template-columns:1fr;}}
+  .result-box{background:var(--panel2); border-radius:12px; padding:16px; text-align:center;}
+  .result-box .num{font-size:26px; font-weight:800;}
+  .result-box .lbl{font-size:12px; color:var(--muted); margin-top:4px;}
+  .review-item{
+    background:var(--panel2); border-radius:12px; padding:16px; margin-bottom:12px;
+    border-left:4px solid var(--danger);
+  }
+  .review-item.correct{border-left-color:var(--accent2);}
+  .review-q{font-weight:700; font-size:14.5px; line-height:1.45; margin-bottom:10px;}
+  .review-line{font-size:13.5px; margin:5px 0; line-height:1.45;}
+  .review-line b{color:var(--muted); font-weight:600;}
+  .ok-text{color:#86efac;} .no-text{color:#fca5a5;}
+  .hidden{display:none !important;}
+  .section-title{font-size:18px; font-weight:800; margin-bottom:14px;}
+  .hint{font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.5;}
+  .divider{height:1px; background:var(--border); margin:22px 0;}
+  .footer-note{text-align:center; color:#475569; font-size:12px; margin-top:30px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>КРОК-1 · Біологія</h1>
+    <p>Тренажер тестів за 10 темами · режими тренування, статистика, робота над помилками</p>
+  </header>
+
+  <section id="screen-home" class="card">
+    <div class="section-title">Оберіть режим</div>
+    <div class="grid">
+      <button class="btn primary" onclick="startAllRandom()">🎲 Пройти всі тести (рандомно)</button>
+      <button class="btn green" onclick="startAllOrdered()">📋 Пройти всі тести по порядку</button>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title">Теми</div>
+    <div id="topic-list" class="topic-list"></div>
+    <p class="hint">У режимі теми відповіді перемішуються, після завершення показується статистика та робота над помилками.</p>
+  </section>
+
+  <section id="screen-quiz" class="card hidden">
+    <div class="quiz-top">
+      <div>
+        <div class="q-topic" id="q-topic"></div>
+        <div class="q-counter" id="q-counter"></div>
+      </div>
+      <button class="btn small ghost" onclick="quitQuiz()">✕ Вийти</button>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="nav-row">
+      <button class="btn small primary hidden" id="next-btn" onclick="nextQuestion()">Далі →</button>
+    </div>
+  </section>
+
+  <section id="screen-result" class="card hidden">
+    <div id="result-head"></div>
+    <div class="score-big" id="score-big"></div>
+    <div class="score-sub" id="score-sub"></div>
+    <div class="result-grid">
+      <div class="result-box"><div class="num" id="res-correct" style="color:#86efac">0</div><div class="lbl">Правильних</div></div>
+      <div class="result-box"><div class="num" id="res-wrong" style="color:#fca5a5">0</div><div class="lbl">Помилок</div></div>
+      <div class="result-box"><div class="num" id="res-total" style="color:#7dd3fc">0</div><div class="lbl">Всього</div></div>
+    </div>
+    <div class="nav-row" style="justify-content:center; flex-wrap:wrap;">
+      <button class="btn small green" onclick="retrySame()">🔁 Пройти ще раз</button>
+      <button class="btn small" onclick="goHome()">🏠 На головну</button>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title" id="review-title">Робота над помилками</div>
+    <div id="review-list"></div>
+  </section>
+
+  <div class="footer-note">Дані збережено локально у браузері · КРОК-1 Біологія</div>
+</div>
+
+<script>
+const TOPICS = [
+{ id:1, title:"1. Рівні організації життя. Методи дослідження в біології", questions:[
+ {q:"Підтримка життя на будь-якому рівні пов'язана із явищем репродукції. На якому рівні організації репродукція здійснюється на основі матричного синтезу?",o:["Молекулярному","Субклітинному","Клітинному","Тканинному","Рівні організму"],a:0},
+ {q:"Хвороба Куру характеризується тремором і атаксією; при хворобі Крейтцфельдта-Якоба спостерігаються розвиток атаксії і деменції. Доведено, що ці захворювання викликаються:",o:["Пріонами","Повільними вірусами","Токсичними продуктами навколишнього середовища","Бактеріями, позбавленими клітинної стінки","Грибами"],a:0},
+ {q:"Встановлено, що в клітинах організмів відсутні мембранні органели та їх спадковий матеріал не має нуклеосомної організації. Що це за організми?",o:["Прокаріоти","Віруси","Аскоміцети","Еукаріоти","Найпростіші"],a:0},
+ {q:"Організми мають ядро, оточене ядерною мембраною. Генетичний матеріал зосереджений переважно в хромосомах, які складаються з ниток ДНК і білкових молекул. Діляться ці клітини мітотично. Це:",o:["Еукаріоти","Бактеріофаги","Прокаріоти","Віруси","Бактерії"],a:0},
+ {q:"Існування життя на всіх його рівнях визначається структурою нижчого рівня. Який рівень організації передує і забезпечує існування життя на клітинному рівні?",o:["Молекулярний","Тканевий","Організменний","Популяційно-видовий","Біоценотичний"],a:0},
+ {q:"Елементарні екологічні системи, у яких здійснюється речовинно-енергетичний кругообіг, що обумовлений життєдіяльністю багатьох організмів, становлять рівень організації живої матерії, назва якого:",o:["Екосистемний","Біосферний","Популяційний","Видовий","Організмовий"],a:0}
+]},
+{ id:2, title:"2. Морфологія клітини. Клітинні мембрани. Транспорт речовин", questions:[
+ {q:"У студента 18 років виявлено збільшення щитоподібної залози, підвищений обмін речовин, збільшена частота пульсу. Ці ознаки спостерігаються при гіперсекреції гормону тироксину. Які органели клітин щитоподібної залози найбільш відповідальні за секрецію і виділення гормонів:",o:["Комплекс Гольджі","Мітохондрії","Рибосоми","Центросоми","Лізосоми"],a:0},
+ {q:"Речовини виводяться з клітини в результаті з'єднання мембранної структури апарату Гольджі з цитолемою. Вміст такої структури викидається за межі клітини. Цей процес має назву:",o:["Екзоцитоз","Осмос","Ендоцитоз","Активний транспорт","Полегшена дифузія"],a:0},
+ {q:"Хворому призначено препарат з вираженими ліпофільними властивостями. Яким буде головний механізм його всмоктування?",o:["Пасивна дифузія","Фільтрація","Активний транспорт","Піноцитоз","Зв'язування з транспортними білками"],a:0},
+ {q:"У деяких одноклітинних організмів, наприклад амеб, живлення здійснюється шляхом фагоцитозу. В яких клітинах організму людини таке явище не є способом живлення, а здійснює захист організму від чужорідних агентів?",o:["Лейкоцити","Еритроцити","Епітеліоцити","Міоцити","Тромбоцити"],a:0},
+ {q:"При мікроскопії клітин серцевого м'яза людини знайдені органели овальної форми, оболонка яких утворена двома мембранами: зовнішня гладка, а внутрішня утворює кристи. Які органели досліджувались?",o:["Мітохондрії","Лізосоми","Рибосоми","Ендоплазматичний ретикулюм","Центросоми"],a:0},
+ {q:"На клітину подіяли речовиною, яка спричинила порушення цілісності мембран лізосом. Що відбудеться з клітиною внаслідок цього?",o:["Автоліз","Спеціалізація","Трансформація","Диференціація","Дегенерація"],a:0}
+]},
+{ id:3, title:"3. Генетичний апарат клітини. Хромосоми. Каріотип", questions:[
+ {q:"З метою одержання каріотипу людини на клітини в культурі тканини подіяли колхіцином, який блокує веретено поділу. На якій стадії припиняється мітоз?",o:["Метафаза","Інтерфаза","Анафаза","Профаза","Телофаза"],a:0},
+ {q:"Ядра клітин обробили препаратом, що зруйнував структуру гістонів. Які компоненти клітини зміняться в першу чергу?",o:["Хромосоми","Мітохондрії","Плазматична мембрана","Рибосоми","Ядерна оболонка"],a:0},
+ {q:"При дослідженні амніотичної рідини виявлені клітини, ядра яких містять статевий хроматин (тільце Барра). Про що це свідчить?",o:["Розвиток плода жіночої статі","Розвиток плода чоловічої статі","Генетичні порушення","Трисомія","Поліплоїдія"],a:0},
+ {q:"Скільки хромосом входить до складу метафазної пластинки соматичної клітини людини, якщо кожна хромосома містить дві сестринські хроматиди?",o:["46 хромосом","92 хромосоми","23 хромосоми","48 хромосом","24 хромосоми"],a:0}
+]},
+{ id:4, title:"4. Життєвий цикл клітини. Мітоз. Амітоз", questions:[
+ {q:"На якому етапі кількість ДНК подвоюється?",o:["Інтерфаза","Профаза","Метафаза","Анафаза","Телофаза"],a:0},
+ {q:"У певних клітинах дорослої людини не спостерігається мітоз, вміст ДНК постійний. Ці клітини:",o:["Нейрони","Ендотелію","М'язові (гладкі)","Епідермісу","Кровотворні"],a:0},
+ {q:"Скільки молекул ДНК має соматична клітина людини в пресинтетичному періоді?",o:["46 молекул ДНК","92 молекули ДНК","23 молекули ДНК","69 молекул ДНК","48 молекул ДНК"],a:0},
+ {q:"Скільки хромосом має клітина людини в анафазі мітозу?",o:["92 хромосоми","46 хромосом","23 хромосоми","69 хромосом","96 хромосом"],a:0}
+]},
+{ id:5, title:"5. Молекулярні основи спадковості. Нуклеїнові кислоти", questions:[
+ {q:"Який процес порушується під дією хінолонів (інгібіторів ДНК-гірази) у першу чергу?",o:["Реплікація ДНК","Репарація ДНК","Ампліфікація генів","Рекомбінація генів","Зворотна транскрипція"],a:0},
+ {q:"Здатність клітин до виправлення пошкоджень у молекулах ДНК називається:",o:["Репарація","Транскрипція","Реплікація","Трансдукція","Трансформація"],a:0},
+ {q:"Внаслідок дефіциту УФО-ендонуклеази порушується репарація ДНК і виникає таке захворювання:",o:["Пігментна ксеродермія","Подагра","Серпоподібноклітинна анемія","Фенілкетонурія","Альбінізм"],a:0},
+ {q:"Яка нова молекула утворюється внаслідок реплікації з молекули ДНК?",o:["ДНК","тРНК","іРНК","рРНК","Про-іРНК"],a:0}
+]},
+{ id:6, title:"6. Будова гена. Генетичний код", questions:[
+ {q:"Поліпептид складається з 54 амінокислот. Яку кількість кодонів мала і-РНК?",o:["54","27","108","162","44"],a:0},
+ {q:"Деякі триплети і-РНК (УАА, УАГ, УГА) не кодують амінокислоти, а припиняють трансляцію. Це:",o:["Стоп-кодони","Оператори","Антикодони","Екзони","Інтрони"],a:0},
+ {q:"Завдяки якій властивості генетичного коду не всі точкові мутації змінюють амінокислоту?",o:["Виродженості","Колінеарності","Універсальності","Неперервності","Триплетності"],a:0},
+ {q:"Яка з амінокислот кодується одним триплетом?",o:["Метіонін","Лізин","Аланін","Лейцин","Серин"],a:0}
+]},
+{ id:7, title:"7. Потік інформації у клітині. Транскрипція та трансляція", questions:[
+ {q:"У клітину потрапив вірус грипу. Трансляція вірусного білка буде здійснюватися:",o:["На полірибосомах","У ядрі","У лізосомах","На каналах гладкої ЕПС","У клітинному центрі"],a:0},
+ {q:"Молекула незрілої і-РНК містить більше триплетів, ніж амінокислот у білку. Трансляції передує:",o:["Процесинг","Ініціація","Репарація","Мутація","Реплікація"],a:0},
+ {q:"РНК вірусу СНІДу з допомогою ревертази синтезує вірусну ДНК. В основі цього лежить:",o:["Зворотна транскрипція","Репресія оперона","Зворотна трансляція","Дерепресія оперона","Конваріантна реплікація"],a:0},
+ {q:"Який процес забезпечує реалізацію спадкової інформації у поліпептидний ланцюг?",o:["Трансляція","Реплікація","Утворення і-РНК","Утворення р-РНК","Утворення т-РНК"],a:0}
+]},
+{ id:8, title:"8. Репродукція людини. Гаметогенез. Мейоз. Дроблення", questions:[
+ {q:"Механізм, що підтримує сталість числа хромосом при статевому розмноженні:",o:["Мейоз","Шизогонія","Амітоз","Регенерація","Брунькування"],a:0},
+ {q:"Якій стадії розвитку відповідає ембріон людини, не прикріплений до ендометрію?",o:["Бластоцисти","Зиготи","Морули","Гаструли","Нейрули"],a:0},
+ {q:"Який тип бластули характерний для людини?",o:["Бластоциста","Целобластула","Дискобластула","Амфібластула","Морула"],a:0},
+ {q:"На якій стадії профази першого мейотичного поділу відбувається кросинговер?",o:["Пахінеми","Лептогнеми","Зигонеми","Дипломеми","Діакінезу"],a:0}
+]},
+{ id:9, title:"9. Гаструляція. Провізорні органи. Вади розвитку", questions:[
+ {q:"Який провізорний орган виконує функцію зв'язку між кровоносними системами матері і плоду?",o:["Плацента","Жовтковий мішок","Амніон","Серозна оболонка","Алантоїс"],a:0},
+ {q:"У немовляти мікроцефалія через актиноміцин D. На який зародковий листок подіяв тератоген?",o:["Ектодерма","Ентодерма","Мезодерма","Ентодерма та мезодерма","Усі листки"],a:0},
+ {q:"Як називаються вади розвитку, які нагадують відповідні органи предкових груп людини?",o:["Атавістичні","Нефілогенетичні","Генокопії","Фенокопії","Алогенні"],a:0},
+ {q:"Яка провізорна оболонка формує плаценту?",o:["Хоріон","Амніон","Жовтковий мішок","Пупковий канатик","Алантоїс"],a:0}
+]},
+{ id:10, title:"10. Постнатальний онтогенез. Трансплантація, регенерація", questions:[
+ {q:"Які клітини імунної системи безпосередньо впливають на клітини трансплантату?",o:["Т-кілери","Плазмобласти","Т-хелпери","Супресори","Тимоцити"],a:0},
+ {q:"Який вид трансплантації застосовано, якщо пересаджують власну шкіру пацієнта?",o:["Аутотрансплантацію","Ізотрансплантацію","Алотрансплантацію","Ксенотрансплантацію","Гетеротрансплантацію"],a:0},
+ {q:"Який вид регенерації відбувся, якщо відновилася маса органа, а не форма?",o:["Регенераційна гіпертрофія","Морфалаксис","Епіморфоз","Компенсаторна гіпертрофія","Гетероморфоз"],a:0},
+ {q:"Як називається період індивідуального розвитку, для якого характерні втрата еластичності шкіри, послаблення зору і слуху?",o:["Старіння","Підлітковий","Перший","Зрілий","Ювенільний"],a:0}
+]}
+];
+
 const STATS_KEY = "krok1_bio_stats_v1";
-function loadStats(){
-  try{ return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; }
-  catch(e){ return {}; }
-}
-function saveStats(s){
-  try{ localStorage.setItem(STATS_KEY, JSON.stringify(s)); }catch(e){}
-}
+function loadStats(){ try{ return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch(e){ return {}; } }
+function saveStats(s){ try{ localStorage.setItem(STATS_KEY, JSON.stringify(s)); }catch(e){} }
 function recordResult(topicId, correct, total){
-  const s = loadStats();
-  const key = String(topicId);
+  const s = loadStats(); const key = String(topicId);
   if(!s[key]) s[key] = { attempts:0, best:0, lastCorrect:0, lastTotal:0 };
   s[key].attempts += 1;
   const pct = total>0 ? Math.round(correct/total*100) : 0;
@@ -458,29 +690,17 @@ function recordResult(topicId, correct, total){
   saveStats(s);
 }
 
-/* =========================================================
-   СТАН ТЕСТУ
-   ========================================================= */
-let session = null; // {questions:[...], index, answers:[], mode, topicId}
-
+let session = null;
 function shuffle(arr){
   const a = arr.slice();
-  for(let i=a.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
-  }
+  for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; }
   return a;
 }
 
-// Підготувати питання з перемішаними варіантами
 function prepareQuestion(q, shuffleOptions){
   const opts = q.o.map((text, idx) => ({text, correct: idx === q.a}));
   const finalOpts = shuffleOptions ? shuffle(opts) : opts;
-  return {
-    text: q.q,
-    options: finalOpts,
-    topicTitle: q._topicTitle || ""
-  };
+  return { text: q.q, options: finalOpts, topicTitle: q._topicTitle || "" };
 }
 
 function buildQuestionsForTopic(topic, shuffleOptions){
@@ -491,20 +711,192 @@ function buildQuestionsForTopic(topic, shuffleOptions){
   });
 }
 
-/* =========================================================
-   НАВІГАЦІЯ ЕКРАНІВ
-   ========================================================= */
 function showScreen(id){
-  ["screen-home","screen-quiz","screen-result"].forEach(s=>{
-    document.getElementById(s).classList.add("hidden");
-  });
+  ["screen-home","screen-quiz","screen-result"].forEach(s=>{ document.getElementById(s).classList.add("hidden"); });
   document.getElementById(id).classList.remove("hidden");
 }
 
-/* =========================================================
-   ГОЛОВНЕ МЕНЮ — РЕНДЕР ТЕМ
-   ========================================================= */
 function renderTopics(){
   const stats = loadStats();
   const container = document.getElementById("topic-list");
-  container.innerHTML
+  container.innerHTML = "";
+  TOPICS.forEach(topic => {
+    const st = stats[String(topic.id)];
+    const row = document.createElement("div");
+    row.className = "topic-row";
+    let pills = "";
+    if(st){
+      pills += `<span class="stat-pill">Спроб: ${st.attempts}</span>`;
+      const bestClass = st.best >= 70 ? "good" : "bad";
+      pills += `<span class="stat-pill ${bestClass}">Найкраще: ${st.best}%</span>`;
+      if(st.lastTotal) pills += `<span class="stat-pill">Останнє: ${st.lastCorrect}/${st.lastTotal}</span>`;
+    }
+    row.innerHTML = `
+      <div class="topic-info">
+        <div class="topic-title">${topic.title}</div>
+        <div class="topic-meta">${topic.questions.length} питань ${pills}</div>
+      </div>
+      <button class="btn small primary" onclick="startTopic(${topic.id})">▶ Почати</button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function startTopic(topicId){
+  const topic = TOPICS.find(t => t.id === topicId);
+  if(!topic) return;
+  let questions = buildQuestionsForTopic(topic, true);
+  session = { questions, index: 0, answers: [], mode: "topic", topicId, topicTitle: topic.title };
+  showScreen("screen-quiz");
+  renderQuestion();
+}
+
+function startAllOrdered(){
+  let all = [];
+  TOPICS.forEach(topic => {
+    topic.questions.forEach(q => {
+      const prepared = prepareQuestion(q, false);
+      prepared.topicTitle = topic.title;
+      all.push(prepared);
+    });
+  });
+  session = { questions: all, index:0, answers:[], mode:"all-ordered", topicId:null, topicTitle:"Усі тести (по порядку)" };
+  showScreen("screen-quiz");
+  renderQuestion();
+}
+
+function startAllRandom(){
+  let all = [];
+  TOPICS.forEach(topic => {
+    topic.questions.forEach(q => {
+      const prepared = prepareQuestion(q, true);
+      prepared.topicTitle = topic.title;
+      all.push(prepared);
+    });
+  });
+  all = shuffle(all);
+  session = { questions: all, index:0, answers:[], mode:"all-random", topicId:null, topicTitle:"Усі тести (рандомно)" };
+  showScreen("screen-quiz");
+  renderQuestion();
+}
+
+function retrySame(){
+  if(!session) return goHome();
+  if(session.mode === "topic") startTopic(session.topicId);
+  else if(session.mode === "all-ordered") startAllOrdered();
+  else startAllRandom();
+}
+
+function quitQuiz(){ if(confirm("Вийти з тесту? Прогрес не буде збережено.")) goHome(); }
+function goHome(){ session = null; renderTopics(); showScreen("screen-home"); }
+
+let answered = false;
+function renderQuestion(){
+  const q = session.questions[session.index];
+  const total = session.questions.length;
+  document.getElementById("q-topic").textContent = q.topicTitle || "";
+  document.getElementById("q-counter").textContent = `Питання ${session.index+1} з ${total}`;
+  document.getElementById("progress-fill").style.width = `${(session.index/total)*100}%`;
+  document.getElementById("q-text").textContent = q.text;
+
+  const optionsEl = document.getElementById("options");
+  optionsEl.innerHTML = "";
+  const letters = ["A","B","C","D","E","F","G","H"];
+  q.options.forEach((opt, i) => {
+    const div = document.createElement("div");
+    div.className = "option";
+    div.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt.text}</span>`;
+    div.onclick = () => selectAnswer(i);
+    optionsEl.appendChild(div);
+  });
+
+  const fb = document.getElementById("feedback");
+  fb.className = "feedback"; fb.innerHTML = "";
+  document.getElementById("next-btn").classList.add("hidden");
+  answered = false;
+}
+
+function selectAnswer(selectedIndex){
+  if(answered) return;
+  answered = true;
+  const q = session.questions[session.index];
+  const optionsEl = document.getElementById("options");
+  const nodes = optionsEl.querySelectorAll(".option");
+  let correctIndex = -1;
+  q.options.forEach((o,i)=>{ if(o.correct) correctIndex = i; });
+
+  nodes.forEach((node, i) => {
+    node.classList.add("disabled");
+    if(i === correctIndex) node.classList.add("correct");
+    if(i === selectedIndex && i !== correctIndex) node.classList.add("wrong");
+  });
+
+  const isCorrect = selectedIndex === correctIndex;
+  session.answers.push({ selectedIndex, correctIndex, isCorrect, question: q });
+
+  const fb = document.getElementById("feedback");
+  if(isCorrect){
+    fb.className = "feedback ok";
+    fb.innerHTML = `✅ Правильно!`;
+  } else {
+    fb.className = "feedback no";
+    fb.innerHTML = `❌ Неправильно. Правильна відповідь: <b>${q.options[correctIndex].text}</b>`;
+  }
+  document.getElementById("next-btn").classList.remove("hidden");
+  document.getElementById("progress-fill").style.width = `${((session.index+1)/session.questions.length)*100}%`;
+}
+
+function nextQuestion(){
+  answered = false;
+  session.index++;
+  if(session.index >= session.questions.length) finishQuiz();
+  else renderQuestion();
+}
+
+function finishQuiz(){
+  const total = session.questions.length;
+  const correct = session.answers.filter(a => a.isCorrect).length;
+  const wrong = total - correct;
+  const pct = total>0 ? Math.round(correct/total*100) : 0;
+
+  if(session.topicId) recordResult(session.topicId, correct, total);
+
+  document.getElementById("result-head").innerHTML = `<div class="section-title">${session.topicTitle}</div>`;
+  document.getElementById("score-big").textContent = `${pct}%`;
+  document.getElementById("score-sub").textContent = pct >= 70 ? "🎉 Чудовий результат!" : "Потрібно ще попрацювати 💪";
+  document.getElementById("res-correct").textContent = correct;
+  document.getElementById("res-wrong").textContent = wrong;
+  document.getElementById("res-total").textContent = total;
+
+  const reviewList = document.getElementById("review-list");
+  reviewList.innerHTML = "";
+  const mistakes = session.answers.filter(a => !a.isCorrect);
+
+  if(mistakes.length === 0){
+    document.getElementById("review-title").textContent = "Робота над помилками";
+    reviewList.innerHTML = `<div class="review-item correct"><div class="review-q">Помилок немає — усі відповіді правильні! ✅</div></div>`;
+  } else {
+    document.getElementById("review-title").textContent = `Робота над помилками (${mistakes.length})`;
+    mistakes.forEach((ans, idx) => {
+      const q = ans.question;
+      const item = document.createElement("div");
+      item.className = "review-item";
+      item.innerHTML = `
+        <div class="review-q">${idx+1}. ${q.text}</div>
+        <div class="review-line no-text"><b>Ваша відповідь:</b> ${q.options[ans.selectedIndex].text}</div>
+        <div class="review-line ok-text"><b>Правильна відповідь:</b> ${q.options[ans.correctIndex].text}</div>
+      `;
+      reviewList.appendChild(item);
+    });
+  }
+  showScreen("screen-result");
+  renderTopics();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderTopics();
+  showScreen("screen-home");
+});
+</script>
+</body>
+</html>
